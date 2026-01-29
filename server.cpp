@@ -7,6 +7,7 @@
 
 int main() {
     const int PORT_NUM = 8080;
+    bool running = true;
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
@@ -33,7 +34,7 @@ int main() {
 
     std::cout << "Server listening on port " << PORT_NUM << "...\n";
 
-    while(true){
+    while(running){
 	sockaddr_in client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 	int client_fd = accept(server_fd, (sockaddr*)&client_addr, &addr_len);
