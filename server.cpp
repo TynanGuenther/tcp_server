@@ -33,13 +33,32 @@ int main() {
 
     std::cout << "Server listening on port " << PORT_NUM << "...\n";
 
-    //always block for now
-    while(true) {
-	pause();
-    }
+    while(true){
+	sockaddr_in client_addr;
+	socklen_t addr_len = sizeof(client_addr);
+	int client_fd = accept(server_fd, (sockaddr*)&client_addr, &addr_len);
+	std::cout << "checking client\n";
+	if (client_fd < 0) {
+	    perror("accept");
+	    close(server_fd);
+	    close(client_fd);
+	    return 1;
+	}
 
+	char client_addr_str[INET_ADDRSTRLEN];
+	if (inet_ntop(AF_INET, &client_addr.sin_addr, client_addr_str, sizeof(client_addr_str)) == NULL) {
+	    perror("inet_ntop");
+	    close(client_fd);
+	    close(server_fd);
+	    return 1;
+	}
+	int client_port_num = ntohs(client_addr.sin_port);
+
+	std::cout << "Port " << client_port_num << " Address: " << client_addr_str << std::endl;
+
+	close(client_fd);
+    }
     close(server_fd);
-    return 0;
 
     return 0;
 }
