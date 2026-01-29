@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -35,27 +36,43 @@ int main() {
     std::cout << "Server listening on port " << PORT_NUM << "...\n";
 
     while(running){
-	sockaddr_in client_addr;
+	sockaddr_in client_addr{};
 	socklen_t addr_len = sizeof(client_addr);
+
 	int client_fd = accept(server_fd, (sockaddr*)&client_addr, &addr_len);
-	std::cout << "checking client\n";
 	if (client_fd < 0) {
 	    perror("accept");
-	    close(server_fd);
-	    close(client_fd);
-	    return 1;
+	    continue;
 	}
 
 	char client_addr_str[INET_ADDRSTRLEN];
-	if (inet_ntop(AF_INET, &client_addr.sin_addr, client_addr_str, sizeof(client_addr_str)) == NULL) {
+	if (!inet_ntop(AF_INET, &client_addr.sin_addr, client_addr_str, sizeof(client_addr_str))) {
 	    perror("inet_ntop");
 	    close(client_fd);
-	    close(server_fd);
-	    return 1;
+	    continue;
 	}
+
 	int client_port_num = ntohs(client_addr.sin_port);
 
-	std::cout << "Port " << client_port_num << " Address: " << client_addr_str << std::endl;
+	char client_mess[1024];
+	ssize_t bytes_rec = recv(client_fd, client_mess, sizeof(client_mess)-1, 0);
+	if (bytes_rec <= 0) {
+	    if (bytes_rec < 0){
+		perror("recv");
+	    }
+	    close(client_fd);
+	    continue;
+	}
+
+	client_mess[bytes_rec] = '\0';
+	std::cout << "Recieved From: " << client_addr_str << ":" << client_port_num << " -> " << client_mess << std::endl;
+
+	char response[1024];
+	int response_len = snprintf(response, sizeof(response), "You said: %s", client_mess);
+
+	if (send(client_fd, &response, response_len, 0) < 0) {
+	    perror("send");
+	}
 
 	close(client_fd);
     }
