@@ -1,9 +1,11 @@
 #include <iostream>
-#include <cstring>
 #include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/select.h>
+
+
 
 
 int main() {
@@ -35,10 +37,31 @@ int main() {
 
     std::cout << "Server listening on port " << PORT_NUM << "...\n";
 
+    fd_set master_set;
+    fd_set read_set;
+
+    FD_ZERO(&master_set);
+    FD_SET(server_fd, &master_set);
+    int max_fd = server_fd;
+
     while(running){
+	read_set = master_set;
+
+	select(max_fd + 1, &read_set, nullptr, nullptr, nullptr);
+
+	for (int fd = 0; fd <= max_fd; fd++) {
+	    if (FD_ISSET(fd, &read_set)) {
+		if (fd == server_fd) {
+		    //new connection
+		} else {
+		    //existing client sent data
+		}
+	    }
+	}
+	//TODO: IMPLEMENT NEW CONNECTION AND EXISTING
+
 	sockaddr_in client_addr{};
 	socklen_t addr_len = sizeof(client_addr);
-
 	int client_fd = accept(server_fd, (sockaddr*)&client_addr, &addr_len);
 	if (client_fd < 0) {
 	    perror("accept");
